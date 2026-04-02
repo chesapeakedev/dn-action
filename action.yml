@@ -1,0 +1,30 @@
+name: "Install dn"
+description: "Installs the dn CLI from GitHub Releases"
+inputs:
+  version:
+    description: "Version to install (semver tag or 'latest')"
+    default: "latest"
+  install-dir:
+    description: "Install directory (default: ~/.local/bin)"
+    default: ""
+  github-token:
+    description: "GitHub token for API requests (higher rate limit)"
+    default: ""
+outputs:
+  dn-version:
+    description: "Version of dn that was installed"
+    value: ${{ steps.install.outputs.version }}
+  dn-path:
+    description: "Absolute path to the dn binary"
+    value: ${{ steps.install.outputs.path }}
+runs:
+  using: composite
+  shell: bash
+  steps:
+    - id: install
+      shell: bash
+      run: ${{ github.action_path }}/entrypoint.sh
+      env:
+        DN_VERSION: ${{ inputs.version }}
+        DN_INSTALL_DIR: ${{ inputs.install-dir }}
+        GITHUB_TOKEN: ${{ inputs.github-token }}
