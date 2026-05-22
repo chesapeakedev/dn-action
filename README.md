@@ -1,6 +1,6 @@
-# chesapeake/dn-action
+# chesapeakedev/dn-action
 
-A GitHub Action that installs the [`dn`](https://github.com/chesapeake/dn) CLI from
+A GitHub Action that installs the [`dn`](https://github.com/chesapeakedev/dn) CLI from
 GitHub Releases.
 
 ## Usage
@@ -13,7 +13,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Install dn
-        uses: chesapeake/dn-action@v1
+        uses: chesapeakedev/dn-action@v1
 
       - name: Run dn kickstart
         run: dn --awp --opencode "${{ github.event.issue.html_url }}"
@@ -24,7 +24,7 @@ jobs:
 Pin to a specific release to avoid unexpected updates:
 
 ```yaml
-      - uses: chesapeake/dn-action@v1
+      - uses: chesapeakedev/dn-action@v1
         with:
           version: "1.2.3"
 ```
@@ -32,7 +32,7 @@ Pin to a specific release to avoid unexpected updates:
 Or use a semver range:
 
 ```yaml
-      - uses: chesapeake/dn-action@v1
+      - uses: chesapeakedev/dn-action@v1
         with:
           version: ">=1.2.0"
 ```
@@ -40,7 +40,7 @@ Or use a semver range:
 ### Custom install directory
 
 ```yaml
-      - uses: chesapeake/dn-action@v1
+      - uses: chesapeakedev/dn-action@v1
         with:
           version: "latest"
           install-dir: "$HOME/bin"
@@ -57,7 +57,7 @@ Or use a semver range:
 ## Authentication
 
 You do **not** need to set `github-token` or add an earlier step for a **public**
-[`chesapeake/dn`](https://github.com/chesapeake/dn) release. The action uses the
+[`chesapeakedev/dn`](https://github.com/chesapeakedev/dn) release. The action uses the
 workflow’s built-in `GITHUB_TOKEN` automatically.
 
 The `github-token` input is optional. Use it only when you need a different credential

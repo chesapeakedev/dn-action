@@ -3,6 +3,7 @@ set -euo pipefail
 
 VERSION="${DN_VERSION:-latest}"
 INSTALL_DIR="${DN_INSTALL_DIR:-$HOME/.local/bin}"
+DN_REPO="${DN_REPO:-chesapeakedev/dn}"
 
 # Detect OS
 case "$RUNNER_OS" in
@@ -43,19 +44,25 @@ if [ "$VERSION" = "latest" ]; then
   TAG=$(curl -fsSL \
     "${AUTH_HEADER[@]}" \
     -H "Accept: application/vnd.github+json" \
-    "https://api.github.com/repos/chesapeake/dn/releases/latest" \
+    "https://api.github.com/repos/${DN_REPO}/releases/latest" \
     | grep '"tag_name"' \
-    | sed 's/.*"v\?\([^"]*\)".*/\1/')
+    | head -1 \
+    | sed -E 's/.*"tag_name": "([^"]+)".*/\1/')
   if [ -z "$TAG" ]; then
-    echo "error: failed to resolve latest release tag" >&2
+    echo "error: failed to resolve latest release tag from ${DN_REPO}" >&2
     exit 1
   fi
 else
   TAG="$VERSION"
 fi
 
+# Release tags use a v prefix (e.g. v0.0.23)
+if [[ "$TAG" != v* ]]; then
+  TAG="v${TAG}"
+fi
+
 # Download
-URL="https://github.com/chesapeake/dn/releases/download/${TAG}/${BINARY}"
+URL="https://github.com/${DN_REPO}/releases/download/${TAG}/${BINARY}"
 DEST="$INSTALL_DIR/${BINARY##*/}"
 
 mkdir -p "$INSTALL_DIR"
