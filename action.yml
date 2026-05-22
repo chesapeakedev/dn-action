@@ -8,7 +8,7 @@ inputs:
     description: "Install directory (default: ~/.local/bin)"
     default: ""
   github-token:
-    description: "GitHub token for API requests (higher rate limit)"
+    description: "GitHub token for API requests (defaults to the workflow GITHUB_TOKEN)"
     default: ""
 outputs:
   dn-version:
@@ -26,4 +26,4 @@ runs:
       env:
         DN_VERSION: ${{ inputs.version }}
         DN_INSTALL_DIR: ${{ inputs.install-dir }}
-        GITHUB_TOKEN: ${{ inputs.github-token }}
+        GITHUB_TOKEN: ${{ inputs.github-token != '' && inputs.github-token || github.token }}

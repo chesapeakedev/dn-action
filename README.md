@@ -52,7 +52,32 @@ Or use a semver range:
 | ------------- | ------------- | ----------------------------------------------- |
 | `version`     | `"latest"`    | Release tag or semver range to install          |
 | `install-dir` | `"~/.local/bin"` | Directory to install the binary into        |
-| `github-token`| `""`          | GitHub token for API requests (higher rate limit) |
+| `github-token`| workflow token | Optional override; defaults to `github.token` (see below) |
+
+## Authentication
+
+You do **not** need to set `github-token` or add an earlier step for a **public**
+[`chesapeake/dn`](https://github.com/chesapeake/dn) release. The action uses the
+workflow’s built-in `GITHUB_TOKEN` automatically.
+
+The `github-token` input is optional. Use it only when you need a different credential
+(for example a PAT that can read a **private** `dn` repo in another org).
+
+For private release repos, ensure the job can read repository contents:
+
+```yaml
+permissions:
+  contents: read
+```
+
+If the default `GITHUB_TOKEN` cannot access the release repo (common across orgs),
+pass a PAT:
+
+```yaml
+      - uses: chesapeakedev/dn-action@v1
+        with:
+          github-token: ${{ secrets.DN_RELEASES_TOKEN }}
+```
 
 ## Outputs
 

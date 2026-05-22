@@ -32,10 +32,16 @@ else
   BINARY="dn-${OS}-${ARCH}"
 fi
 
+# Auth headers only when a token is set (empty Authorization causes GitHub 401)
+AUTH_HEADER=()
+if [ -n "${GITHUB_TOKEN:-}" ]; then
+  AUTH_HEADER=(-H "Authorization: Bearer ${GITHUB_TOKEN}")
+fi
+
 # Resolve version tag
 if [ "$VERSION" = "latest" ]; then
   TAG=$(curl -fsSL \
-    -H "Authorization: token ${GITHUB_TOKEN:-}" \
+    "${AUTH_HEADER[@]}" \
     -H "Accept: application/vnd.github+json" \
     "https://api.github.com/repos/chesapeake/dn/releases/latest" \
     | grep '"tag_name"' \
@@ -54,7 +60,11 @@ DEST="$INSTALL_DIR/${BINARY##*/}"
 
 mkdir -p "$INSTALL_DIR"
 echo "::notice::Downloading dn ${TAG} for ${OS}/${ARCH} from ${URL}"
-curl -fsSL -o "$DEST" "$URL"
+if [ "${#AUTH_HEADER[@]}" -gt 0 ]; then
+  curl -fsSL "${AUTH_HEADER[@]}" -H "Accept: application/octet-stream" -o "$DEST" "$URL"
+else
+  curl -fsSL -o "$DEST" "$URL"
+fi
 
 # Make executable (skip on Windows — .exe is already executable)
 if [ "$OS" != "windows" ]; then
