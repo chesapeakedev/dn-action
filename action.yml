@@ -19,7 +19,6 @@ outputs:
     value: ${{ steps.install.outputs.path }}
 runs:
   using: composite
-  shell: bash
   steps:
     - id: install
       shell: bash
