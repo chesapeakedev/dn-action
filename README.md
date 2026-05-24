@@ -84,19 +84,24 @@ pass a PAT:
 | Output     | Description                        |
 | ---------- | ---------------------------------- |
 | `dn-version` | Version tag of the installed dn |
-| `dn-path`    | Absolute path to the dn binary   |
+| `dn-path`    | Absolute path to the installed `dn` binary (`dn` or `dn.exe`) |
 
 ## Platforms
 
-| OS      | Arch   | Binary name         |
-| ------- | ------ | ------------------- |
-| Linux   | x64    | `dn-linux-x64`      |
-| Linux   | ARM64  | `dn-linux-arm64`    |
-| macOS   | x64    | `dn-macos-x64`       |
-| macOS   | ARM64  | `dn-macos-arm64`     |
-| Windows | x64    | `dn-windows-x64.exe` |
+The action auto-detects `runner.os` and `runner.arch`, downloads the matching
+release asset, and installs it as `dn` (or `dn.exe` on Windows) in the install
+directory:
 
-The action auto-detects `runner.os` and `runner.arch` to select the correct binary.
+| OS      | Arch   | Release asset        | Installed as |
+| ------- | ------ | -------------------- | ------------ |
+| Linux   | x64    | `dn-linux-x64`       | `dn`         |
+| Linux   | ARM64  | `dn-linux-arm64`     | `dn`         |
+| macOS   | x64    | `dn-macos-x64`       | `dn`         |
+| macOS   | ARM64  | `dn-macos-arm64`     | `dn`         |
+| Windows | x64    | `dn-windows-x64.exe` | `dn.exe`     |
+
+Subsequent workflow steps can run `dn` directly once the install directory is on
+`PATH` (the action appends it via `GITHUB_PATH`).
 
 ## Unsupported platforms
 

@@ -26,11 +26,19 @@ case "$RUNNER_ARCH" in
     ;;
 esac
 
-# Build binary name
+# Release asset name (platform-specific download from GitHub Releases)
 if [ "$OS" = "windows" ]; then
   BINARY="dn-${OS}-${ARCH}.exe"
+  DN_BIN="$INSTALL_DIR/dn.exe"
 else
   BINARY="dn-${OS}-${ARCH}"
+  DN_BIN="$INSTALL_DIR/dn"
+fi
+
+# Auth headers only when a token is set (empty Authorization causes GitHub 401)
+AUTH_HEADER=()
+if [ -n "${GITHUB_TOKEN:-}" ]; then
+  AUTH_HEADER=(-H "Authorization: Bearer ${GITHUB_TOKEN}")
 fi
 
 # Auth headers only when a token is set (empty Authorization causes GitHub 401)
@@ -61,28 +69,37 @@ if [[ "$TAG" != v* ]]; then
   TAG="v${TAG}"
 fi
 
-# Download
+# Download release asset to a temp file, then install as dn (or dn.exe on Windows)
 URL="https://github.com/${DN_REPO}/releases/download/${TAG}/${BINARY}"
-DEST="$INSTALL_DIR/${BINARY##*/}"
+TMP=$(mktemp)
+trap 'rm -f "$TMP"' EXIT
 
 mkdir -p "$INSTALL_DIR"
 echo "::notice::Downloading dn ${TAG} for ${OS}/${ARCH} from ${URL}"
 if [ "${#AUTH_HEADER[@]}" -gt 0 ]; then
-  curl -fsSL "${AUTH_HEADER[@]}" -H "Accept: application/octet-stream" -o "$DEST" "$URL"
+  curl -fsSL "${AUTH_HEADER[@]}" -H "Accept: application/octet-stream" -o "$TMP" "$URL"
 else
-  curl -fsSL -o "$DEST" "$URL"
+  curl -fsSL -o "$TMP" "$URL"
 fi
 
-# Make executable (skip on Windows — .exe is already executable)
 if [ "$OS" != "windows" ]; then
-  chmod +x "$DEST"
+  chmod +x "$TMP"
 fi
 
-# Ensure binary is on PATH
+mv -f "$TMP" "$DN_BIN"
+trap - EXIT
+
+# Remove legacy platform-named binary from older action versions
+rm -f "$INSTALL_DIR/${BINARY##*/}"
+
+if [ "$OS" != "windows" ]; then
+  chmod +x "$DN_BIN"
+fi
+
+# Ensure install directory is on PATH for subsequent workflow steps
 if [[ ":$PATH:" != *":$INSTALL_DIR:"* ]]; then
-  echo "$INSTALL_DIR" >> $GITHUB_PATH
+  echo "$INSTALL_DIR" >> "$GITHUB_PATH"
 fi
 
-# Write outputs
-echo "version=$TAG" >> $GITHUB_OUTPUT
-echo "path=$DEST" >> $GITHUB_OUTPUT
+echo "version=$TAG" >> "$GITHUB_OUTPUT"
+echo "path=$DN_BIN" >> "$GITHUB_OUTPUT"
