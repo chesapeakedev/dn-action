@@ -22,7 +22,7 @@ runs:
   steps:
     - id: install
       shell: bash
-      run: ${{ github.action_path }}/entrypoint.sh
+      run: "$GITHUB_ACTION_PATH/entrypoint.sh"
       env:
         DN_VERSION: ${{ inputs.version }}
         DN_INSTALL_DIR: ${{ inputs.install-dir }}
