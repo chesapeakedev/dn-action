@@ -1,22 +1,21 @@
 # chesapeakedev/dn-action
 
-A GitHub Action that installs the [`dn`](https://github.com/chesapeakedev/dn) CLI from
-GitHub Releases.
+A GitHub Action that installs the [`dn`](https://github.com/chesapeakedev/dn)
+CLI from GitHub Releases and can execute canonical dn workflows.
 
 ## Usage
 
 ```yaml
 jobs:
-  build:
+  kickstart:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Install dn
-        uses: chesapeakedev/dn-action@v1
-
       - name: Run dn kickstart
-        run: dn --awp --opencode "${{ github.event.issue.html_url }}"
+        uses: chesapeakedev/dn-action@v1
+        with:
+          workflow: dn.kickstart_issue
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 ```
 
 ### With version pinning
@@ -53,6 +52,13 @@ Or use a semver range:
 | `version`     | `"latest"`    | Release tag or semver range to install          |
 | `install-dir` | `"~/.local/bin"` | Directory to install the binary into        |
 | `github-token`| workflow token | Optional override; defaults to `github.token` (see below) |
+| `workflow` | `""` | Canonical workflow ID to execute; empty installs dn only |
+| `validate-only` | `"false"` | Validate the event and configuration without executing |
+
+When `workflow` is set, the action checks out the caller repository, installs
+the configured agent harness, validates the GitHub event, and executes the
+mapped dn command. It writes validation and execution results to the workflow
+run summary. Validation failures remain failing action results.
 
 ## Authentication
 
@@ -85,6 +91,18 @@ pass a PAT:
 | ---------- | ---------------------------------- |
 | `dn-version` | Version tag of the installed dn |
 | `dn-path`    | Absolute path to the installed `dn` binary (`dn` or `dn.exe`) |
+| `status` | Workflow result: `passed`, `failed`, or `validated` |
+| `phase` | Last phase reached: validation, agent installation, or execution |
+| `workflow` | Canonical workflow ID |
+
+To verify a workflow without installing an agent or running the mapped command:
+
+```yaml
+- uses: chesapeakedev/dn-action@v1
+  with:
+    workflow: dn.kickstart_issue
+    validate-only: "true"
+```
 
 ## Platforms
 

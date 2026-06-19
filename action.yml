@@ -1,5 +1,5 @@
-name: "Install dn"
-description: "Installs the dn CLI from GitHub Releases"
+name: "Run dn"
+description: "Installs dn and optionally executes a canonical dn workflow"
 inputs:
   version:
     description: "Version to install (semver tag or 'latest')"
@@ -10,6 +10,12 @@ inputs:
   github-token:
     description: "GitHub token for API requests (defaults to the workflow GITHUB_TOKEN)"
     default: ""
+  workflow:
+    description: "Canonical dn workflow ID to execute"
+    default: ""
+  validate-only:
+    description: "Validate the workflow event and configuration without executing it"
+    default: "false"
 outputs:
   dn-version:
     description: "Version of dn that was installed"
@@ -17,13 +23,70 @@ outputs:
   dn-path:
     description: "Absolute path to the dn binary"
     value: ${{ steps.install.outputs.path }}
+  status:
+    description: "Workflow result: passed, failed, or validated"
+    value: ${{ steps.execute.outputs.status || steps.bootstrap.outputs.status }}
+  phase:
+    description: "Last workflow phase reached"
+    value: ${{ steps.execute.outputs.phase || steps.bootstrap.outputs.phase }}
+  workflow:
+    description: "Canonical workflow ID"
+    value: ${{ steps.execute.outputs.workflow || steps.bootstrap.outputs.workflow }}
 runs:
   using: composite
   steps:
+    - id: checkout
+      name: Checkout caller repository
+      if: inputs.workflow != ''
+      continue-on-error: true
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
     - id: install
+      name: Install dn
+      if: inputs.workflow == '' || steps.checkout.outcome == 'success'
+      continue-on-error: ${{ inputs.workflow != '' }}
       shell: bash
       run: "$GITHUB_ACTION_PATH/entrypoint.sh"
       env:
         DN_VERSION: ${{ inputs.version }}
         DN_INSTALL_DIR: ${{ inputs.install-dir }}
         GITHUB_TOKEN: ${{ inputs.github-token != '' && inputs.github-token || github.token }}
+
+    - id: bootstrap
+      name: Report dn installation failure
+      if: inputs.workflow != '' && (steps.checkout.outcome == 'failure' || steps.install.outcome == 'failure')
+      shell: bash
+      env:
+        DN_WORKFLOW: ${{ inputs.workflow }}
+      run: |
+        {
+          echo "## ❌ dn workflow: ${DN_WORKFLOW}"
+          echo
+          echo "**Status:** failed"
+          echo "**Phase:** bootstrap"
+          echo
+          echo "### Failure"
+          echo
+          echo "The action could not checkout the repository or install dn. Review the bootstrap logs above."
+        } >> "$GITHUB_STEP_SUMMARY"
+        echo "status=failed" >> "$GITHUB_OUTPUT"
+        echo "phase=bootstrap" >> "$GITHUB_OUTPUT"
+        echo "workflow=${DN_WORKFLOW}" >> "$GITHUB_OUTPUT"
+        exit 1
+
+    - id: execute
+      name: Execute dn workflow
+      if: inputs.workflow != '' && steps.install.outcome == 'success'
+      shell: bash
+      env:
+        DN_WORKFLOW: ${{ inputs.workflow }}
+        DN_VALIDATE_ONLY: ${{ inputs.validate-only }}
+        GITHUB_TOKEN: ${{ inputs.github-token != '' && inputs.github-token || github.token }}
+      run: |
+        args=(workflows exec "$DN_WORKFLOW")
+        if [ "$DN_VALIDATE_ONLY" = "true" ]; then
+          args+=(--validate-only)
+        fi
+        dn "${args[@]}"
