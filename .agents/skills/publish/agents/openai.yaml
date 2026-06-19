@@ -1,0 +1,4 @@
+interface:
+  display_name: "Publish"
+  short_description: "Publish dn-action changes safely to v1"
+  default_prompt: "Use $publish to publish the current dn-action changes to main and update v1."
