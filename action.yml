@@ -32,6 +32,18 @@ outputs:
   workflow:
     description: "Canonical workflow ID"
     value: ${{ steps.execute.outputs.workflow || steps.bootstrap.outputs.workflow }}
+  commit-sha:
+    description: "Git commit SHA when dn published changes"
+    value: ${{ steps.execute.outputs.commit_sha }}
+  branch-name:
+    description: "Branch name when dn published changes"
+    value: ${{ steps.execute.outputs.branch_name }}
+  pr-url:
+    description: "Pull request URL when dn opened a PR"
+    value: ${{ steps.execute.outputs.pr_url }}
+  publish-mode:
+    description: "Publish mode used by dn (none, pr, or direct)"
+    value: ${{ steps.execute.outputs.publish_mode }}
 runs:
   using: composite
   steps:
@@ -75,6 +87,14 @@ runs:
         echo "phase=bootstrap" >> "$GITHUB_OUTPUT"
         echo "workflow=${DN_WORKFLOW}" >> "$GITHUB_OUTPUT"
         exit 1
+
+    - id: configure-git
+      name: Configure git identity
+      if: inputs.workflow != '' && steps.checkout.outcome == 'success'
+      shell: bash
+      run: |
+        git config user.name "${GITHUB_ACTOR:-GitHub Actions}"
+        git config user.email "${GITHUB_ACTOR_ID:-41898282}+${GITHUB_ACTOR:-github-actions}@users.noreply.github.com"
 
     - id: execute
       name: Execute dn workflow
