@@ -58,7 +58,9 @@ Or use a semver range:
 When `workflow` is set, the action checks out the caller repository, installs
 the configured agent harness, validates the GitHub event, and executes the
 mapped dn command. It writes validation and execution results to the workflow
-run summary. Validation failures remain failing action results.
+run summary. Validation failures remain failing action results. Before dn runs,
+the action configures the checkout's Git identity from `github.actor` so
+workflows that publish changes can create commits without additional setup.
 
 ## Authentication
 
@@ -94,6 +96,10 @@ pass a PAT:
 | `status` | Workflow result: `passed`, `failed`, or `validated` |
 | `phase` | Last phase reached: validation, agent installation, or execution |
 | `workflow` | Canonical workflow ID |
+| `commit-sha` | Git commit SHA when dn published changes |
+| `branch-name` | Branch name when dn published changes |
+| `pr-url` | Pull request URL when dn opened a PR |
+| `publish-mode` | Publish mode used by dn: `none`, `pr`, or `direct` |
 
 To verify a workflow without installing an agent or running the mapped command:
 
@@ -120,6 +126,27 @@ directory:
 
 Subsequent workflow steps can run `dn` directly once the install directory is on
 `PATH` (the action appends it via `GITHUB_PATH`).
+
+## Repository development
+
+The repository includes `opencode.json`, which configures OpenCode to use the
+`moonshotai/Kimi-K2.7-Code` model through DeepInfra. Set `DEEPINFRA_API_KEY` in
+the development environment before using that provider.
+
+### Publish skill
+
+The repository-local `publish` skill provides the controlled release workflow
+for this action. It is intended for an agent working in this repository after a
+user explicitly asks to publish or release approved changes.
+
+The skill reviews the complete pending change, runs validation appropriate to
+the changed files, commits with Sapling when necessary, and pushes `main`
+without force. It then moves the public `v1` tag to the exact commit on remote
+`main` and verifies that both remote references resolve to the same commit.
+
+Moving `v1` immediately updates workflows that use
+`chesapeakedev/dn-action@v1`. The skill therefore force-updates only the moving
+`refs/tags/v1` reference and never force-pushes `main`.
 
 ## Unsupported platforms
 
